@@ -84,19 +84,31 @@ class SimpleMDAWidget(QWidget):
                                     loops=self.timepoints.value())
         else:
             time_plan = None
-
         channels = ()
         if self.channel_488.isChecked():
             channels = channels + ('488',)
         if self.channel_561.isChecked():
             channels = channels + ('561',)
-
         mda = MDASequence(z_plan=self.stack_widget.value() if self.slices.isChecked() else None,
                           time_plan=time_plan,
                           channels=channels,
                           axis_order=self.acq_order.acquisition_order_comboBox.currentText()
             )
         return mda
+
+    def set_state(self, seq: MDASequence) -> None:
+        self.timeBox.setChecked(seq.time_plan is not None)
+        if seq.time_plan is not None:
+            self.timepoints.setValue(seq.time_plan.loops)
+            self.interval_val.setText(str(seq.time_plan.interval.seconds))
+            self.interval_unit.setCurrentText('s')
+        self.slices.setChecked(seq.z_plan is not None)
+        if seq.z_plan is not None:
+            self.stack_widget.set_state(seq.z_plan.to_dict())
+        my_channels = [name.config for name in seq.channels]
+        self.channel_488.setChecked('488' in my_channels)
+        self.channel_561.setChecked('561' in my_channels)
+        self.acq_order.acquisition_order_comboBox.setCurrentText(seq.axis_order)
 
     def _on_run_clicked(self):
         """Run the MDA sequence experiment."""
